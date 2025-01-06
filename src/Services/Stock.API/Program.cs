@@ -1,5 +1,7 @@
 using MassTransit;
 using MongoDB.Driver;
+using Shared.Settings;
+using Stock.API.Consumers;
 using Stock.API.Models;
 using Stock.API.Services;
 
@@ -77,13 +79,18 @@ var massTransitSettings = builder.Configuration.GetSection("MassTransitSettings"
 
 builder.Services.AddMassTransit(conf =>
 {
-    conf.UsingRabbitMq((ctx, cfg) =>
+    conf.AddConsumer<OrderCreatedEventConsumer>();
+    conf.AddConsumer<StockRollbackMessageConsumer>();
+    conf.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(massTransitSettings["Host"], massTransitSettings["VirtualHost"], h =>
         {
             h.Username(massTransitSettings["UserName"]);
             h.Password(massTransitSettings["Password"]);
         });
+
+        cfg.ReceiveEndpoint(RabbitMqSettings.Stock_OrderCreatedEventQueue, e => e.ConfigureConsumer<OrderCreatedEventConsumer>(context));
+        cfg.ReceiveEndpoint(RabbitMqSettings.Stock_RollbackMessageQueue, e => e.ConfigureConsumer<StockRollbackMessageConsumer>(context));
     });
 
 });

@@ -15,12 +15,7 @@ namespace Stock.API.Services
 
         public IMongoCollection<T> GetCollection<T>() => _database.GetCollection<T>(typeof(T).Name.ToLowerInvariant());
 
-        public IMongoCollection<T> GetCollection<T>(string collectionName = null)
-        {
-            collectionName ??= typeof(T).Name.ToLowerInvariant();
-            return _database.GetCollection<T>(collectionName);
-        }
-
+    
 
     }
 }

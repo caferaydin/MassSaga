@@ -1,4 +1,6 @@
 using MassTransit;
+using Payment.API.Consumers;
+using Shared.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,13 +38,16 @@ var massTransitSettings = builder.Configuration.GetSection("MassTransitSettings"
 
 builder.Services.AddMassTransit(conf =>
 {
-    conf.UsingRabbitMq((ctx, cfg) =>
+    conf.AddConsumer<PaymentStartedEventConsumer>();
+    conf.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(massTransitSettings["Host"], massTransitSettings["VirtualHost"], h =>
         {
             h.Username(massTransitSettings["UserName"]);
             h.Password(massTransitSettings["Password"]);
         });
+
+        cfg.ReceiveEndpoint(RabbitMqSettings.Payment_StartedEventQueue, e => e.ConfigureConsumer<PaymentStartedEventConsumer>(context)); 
     });
 
 });

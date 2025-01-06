@@ -1,11 +1,13 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Order.API.Consumers;
 using Order.API.Contexts;
 using Order.API.Models;
 using Order.API.ViewModels;
 using Shared.Messages;
 using Shared.OrderEvents;
+using Shared.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,13 +31,19 @@ var massTransitSettings = builder.Configuration.GetSection("MassTransitSettings"
 
 builder.Services.AddMassTransit(conf =>
 {
-    conf.UsingRabbitMq((ctx, cfg) =>
+    conf.AddConsumer<OrderCompletedEventConsumer>();
+    conf.AddConsumer<OrderFailedEventConsumer>();
+
+    conf.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(massTransitSettings["Host"], massTransitSettings["VirtualHost"], h =>
         {
             h.Username(massTransitSettings["UserName"]);
             h.Password(massTransitSettings["Password"]);
         });
+
+        cfg.ReceiveEndpoint(RabbitMqSettings.Order_OrderCompletedEventQueue, e => e.ConfigureConsumer<OrderCompletedEventConsumer>(context));
+        cfg.ReceiveEndpoint(RabbitMqSettings.Order_OrderFailedEventQueue, e => e.ConfigureConsumer<OrderFailedEventConsumer>(context));
     });
 });
 

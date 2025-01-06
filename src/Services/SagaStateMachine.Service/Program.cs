@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SagaStateMachine.Service.Contexts;
 using SagaStateMachine.Service.StateInstances;
 using SagaStateMachine.Service.StateMachines;
+using Shared.Settings;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -25,13 +26,15 @@ builder.Services.AddMassTransit(conf =>
             });
         });
 
-    conf.UsingRabbitMq((ctx, cfg) =>
+    conf.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host(massTransitSettings["Host"], massTransitSettings["VirtualHost"], h =>
         {
             h.Username(massTransitSettings["UserName"]);
             h.Password(massTransitSettings["Password"]);
         });
+
+        cfg.ReceiveEndpoint(RabbitMqSettings.StateMachineQueue, e => e.ConfigureSaga<OrderStateInstance>(context));
     });
 
 });
